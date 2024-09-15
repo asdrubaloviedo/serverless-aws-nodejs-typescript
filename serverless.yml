@@ -9,23 +9,17 @@ plugins:
   - serverless-plugin-typescript
 
 functions:
-  api:
-    handler: src/functions/api/handler.handler
+  obtenerCita:
+    handler: src/functions/obtenerCita/handler.handler
     events:
       - httpApi:
-          path: /
+          path: /cita
           method: get
-  obtenerPersona:
-    handler: src/functions/obtenerPersona/handler.handler
+  agregarCita:
+    handler: src/functions/agregarCita/handler.handler
     events:
       - httpApi:
-          path: /persona
-          method: get
-  agregarPersona:
-    handler: src/functions/agregarPersona/handler.handler
-    events:
-      - httpApi:
-          path: /persona
+          path: /cita
           method: post
 
 resources:
@@ -33,7 +27,7 @@ resources:
     appointmentTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: appointmentTable2
+        TableName: appointmentTable3
         AttributeDefinitions:
           - AttributeName: pk
             AttributeType: S

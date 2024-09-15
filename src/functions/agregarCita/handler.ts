@@ -1,9 +1,10 @@
 import { formatJSONResponse } from '../../libs/api-gateway';
 
 export const handler = (event: any) => {
-  console.log('Test Api function');
+  console.log('Test agregarCita function');
+  console.log('Event: ', event);
   return {
-    message: 'Go Serverless v3.0! Your function executed successfully!',
+    message: 'Se ha agregado la cita',
     input: event
   };
 };
