@@ -1,4 +1,4 @@
-service: serverless-aws-nodejs-typescript
+service: serverless-aws-nodejs-ts
 frameworkVersion: '3'
 
 provider:
@@ -15,18 +15,18 @@ functions:
       - httpApi:
           path: /
           method: get
-  # obtenerPersona:
-  #   handler: index.handler
-  #   events:
-  #     - httpApi:
-  #         path: /persona
-  #         method: get
-  # agregarPersona:
-  #   handler: index.handler
-  #   events:
-  #     - httpApi:
-  #         path: /persona
-  #         method: post
+  obtenerPersona:
+    handler: src/functions/obtenerPersona/handler.handler
+    events:
+      - httpApi:
+          path: /persona
+          method: get
+  agregarPersona:
+    handler: src/functions/agregarPersona/handler.handler
+    events:
+      - httpApi:
+          path: /persona
+          method: post
 
 resources:
   Resources:
