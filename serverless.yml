@@ -1,0 +1,45 @@
+service: serverless-aws-nodejs-typescript
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+
+plugins:
+  - serverless-plugin-typescript
+
+functions:
+  api:
+    handler: src/functions/api/handler.handler
+    events:
+      - httpApi:
+          path: /
+          method: get
+  # obtenerPersona:
+  #   handler: index.handler
+  #   events:
+  #     - httpApi:
+  #         path: /persona
+  #         method: get
+  # agregarPersona:
+  #   handler: index.handler
+  #   events:
+  #     - httpApi:
+  #         path: /persona
+  #         method: post
+
+resources:
+  Resources:
+    appointmentTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: appointmentTable2
+        AttributeDefinitions:
+          - AttributeName: pk
+            AttributeType: S
+        KeySchema:
+          - AttributeName: pk
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
