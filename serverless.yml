@@ -4,22 +4,34 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: nodejs18.x
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: 'dynamodb:*'
+          Resource: arn:aws:dynamodb:us-east-1:471112938813:table/appointmentTable4
+        - Effect: Allow
+          Action: 'sns:Publish' # Permiso para publicar en SNS
+          Resource: arn:aws:sns:us-east-1:471112938813:MySNSTopic
+  environment:
+    SNS_TOPIC_ARN:
+      Ref: SnsTopic
 
 plugins:
   - serverless-plugin-typescript
 
 functions:
-  obtenerCita:
-    handler: src/functions/obtenerCita/handler.handler
+  getAppointment:
+    handler: src/functions/getAppointment/handler.handler
     events:
       - httpApi:
-          path: /cita
+          path: /appointment
           method: get
-  agregarCita:
-    handler: src/functions/agregarCita/handler.handler
+  addAppointment:
+    handler: src/functions/addAppointment/handler.handler
     events:
       - httpApi:
-          path: /cita
+          path: /appointment
           method: post
 
 resources:
@@ -27,7 +39,7 @@ resources:
     appointmentTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: appointmentTable3
+        TableName: appointmentTable4
         AttributeDefinitions:
           - AttributeName: pk
             AttributeType: S
@@ -37,3 +49,7 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
+    SnsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: MySNSTopic
