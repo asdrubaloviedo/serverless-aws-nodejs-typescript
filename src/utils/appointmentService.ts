@@ -29,7 +29,6 @@ export const snsMessage = async (body) => {
     body.countryISO === 'PE'
       ? process.env.SNS_TOPIC_ARN_PE
       : process.env.SNS_TOPIC_ARN_CL;
-  console.log('targetTopic: ', targetTopic);
   try {
     const params = {
       Message: 'Hello SNS i am the addAppointment Lambda!',

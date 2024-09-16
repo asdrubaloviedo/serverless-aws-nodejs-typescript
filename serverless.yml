@@ -138,9 +138,6 @@ resources:
         Protocol: sqs
         Endpoint:
           Fn::GetAtt: [MyQueue1, Arn]
-        # FilterPolicy:
-        #   targetQueue:
-        #     - queue1
     # Subscription for Queue 2 with a filter policy
     Queue2Subscription:
       Type: AWS::SNS::Subscription
@@ -150,6 +147,3 @@ resources:
         Protocol: sqs
         Endpoint:
           Fn::GetAtt: [MyQueue2, Arn]
-        # FilterPolicy:
-        #   targetQueue:
-        #     - queue2
