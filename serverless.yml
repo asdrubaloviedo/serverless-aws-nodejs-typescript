@@ -14,16 +14,22 @@ provider:
           Action: 'sns:Publish' # Permiso para publicar en SNS
           Resource: !Ref SnsTopicPE
         - Effect: Allow
+          Action: 'sns:Publish' # Permiso para publicar en SNS
+          Resource: !Ref SnsTopicCL
+        - Effect: Allow
           Action:
-            - 'sns:Publish'
-            - 'sqs:SendMessage'
+            - sns:Publish
+            - sqs:SendMessage
+            - sqs:ReceiveMessage
+            - sqs:DeleteMessage
+            - sqs:GetQueueAttributes
           Resource: '*'
 
   environment:
-    SNS_TOPIC_ARN:
+    SNS_TOPIC_ARN_PE:
       Ref: SnsTopicPE
-    # SNS_TOPIC_ARN_CL:
-    #   Ref: SnsTopicCL
+    SNS_TOPIC_ARN_CL:
+      Ref: SnsTopicCL
 
 plugins:
   - serverless-plugin-typescript
@@ -41,14 +47,20 @@ functions:
       - httpApi:
           path: /appointment
           method: post
-  processMessage:
-    handler: src/functions/processMessage/handler.handler
+  processMessagePE:
+    handler: src/functions/processMessagePE/handler.handler
     events:
       - sqs:
           arn:
             Fn::GetAtt: [MyQueue1, Arn]
-          # batchSize: 5 # Número de mensajes que la Lambda procesará por invocación
-          # maximumBatchingWindow: 60 # Tiempo máximo que se espera para agrupar mensajes
+          batchSize: 1 # Número de mensajes que la Lambda procesará por invocación
+  processMessageCL:
+    handler: src/functions/processMessageCL/handler.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [MyQueue2, Arn]
+          batchSize: 1 # Número de mensajes que la Lambda procesará por invocación
 
 resources:
   Resources:
@@ -69,11 +81,10 @@ resources:
       Type: AWS::SNS::Topic
       Properties:
         TopicName: MySNSTopicPE
-        Subscription:
-          - Protocol: sqs
-            Endpoint: !GetAtt MyQueue1.Arn
-          - Protocol: sqs
-            Endpoint: !GetAtt MyQueue2.Arn
+    SnsTopicCL:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: MySNSTopicCL
     # SQS Queue 1
     MyQueue1:
       Type: AWS::SQS::Queue
@@ -86,6 +97,38 @@ resources:
       Properties:
         QueueName: MyQueue2
         VisibilityTimeout: 60
+    # Política para permitir que SNS envíe mensajes a MyQueue1
+    MyQueue1Policy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref MyQueue1
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal: '*'
+              Action: sqs:SendMessage
+              Resource: !GetAtt MyQueue1.Arn
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !Ref SnsTopicPE
+    # Política para permitir que SNS envíe mensajes a MyQueue2
+    MyQueue2Policy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref MyQueue2
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal: '*'
+              Action: sqs:SendMessage
+              Resource: !GetAtt MyQueue2.Arn
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !Ref SnsTopicCL
     # Subscription for Queue 1 with a filter policy
     Queue1Subscription:
       Type: AWS::SNS::Subscription
@@ -95,18 +138,18 @@ resources:
         Protocol: sqs
         Endpoint:
           Fn::GetAtt: [MyQueue1, Arn]
-        FilterPolicy:
-          targetQueue:
-            - queue1
+        # FilterPolicy:
+        #   targetQueue:
+        #     - queue1
     # Subscription for Queue 2 with a filter policy
     Queue2Subscription:
       Type: AWS::SNS::Subscription
       Properties:
         TopicArn:
-          Ref: SnsTopicPE
+          Ref: SnsTopicCL
         Protocol: sqs
         Endpoint:
           Fn::GetAtt: [MyQueue2, Arn]
-        FilterPolicy:
-          targetQueue:
-            - queue2
+        # FilterPolicy:
+        #   targetQueue:
+        #     - queue2

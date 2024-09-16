@@ -24,15 +24,20 @@ export const createAppointment = async (body) => {
 };
 
 export const snsMessage = async (body) => {
-  // const targetQueue = body.countryISO === 'PE' ? 'queue1' : 'queue2';
+  const targetQueue = body.countryISO === 'PE' ? 'queue1' : 'queue2';
+  const targetTopic =
+    body.countryISO === 'PE'
+      ? process.env.SNS_TOPIC_ARN_PE
+      : process.env.SNS_TOPIC_ARN_CL;
+  console.log('targetTopic: ', targetTopic);
   try {
     const params = {
       Message: 'Hello SNS i am the addAppointment Lambda!',
-      TopicArn: process.env.SNS_TOPIC_ARN,
+      TopicArn: targetTopic,
       MessageAttributes: {
         targetQueue: {
           DataType: 'String',
-          StringValue: 'queue1'
+          StringValue: targetQueue
         }
       }
     };
