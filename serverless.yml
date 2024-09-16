@@ -12,10 +12,18 @@ provider:
           Resource: arn:aws:dynamodb:us-east-1:471112938813:table/appointmentTable4
         - Effect: Allow
           Action: 'sns:Publish' # Permiso para publicar en SNS
-          Resource: arn:aws:sns:us-east-1:471112938813:MySNSTopic
+          Resource: !Ref SnsTopicPE
+        - Effect: Allow
+          Action:
+            - 'sns:Publish'
+            - 'sqs:SendMessage'
+          Resource: '*'
+
   environment:
     SNS_TOPIC_ARN:
-      Ref: SnsTopic
+      Ref: SnsTopicPE
+    # SNS_TOPIC_ARN_CL:
+    #   Ref: SnsTopicCL
 
 plugins:
   - serverless-plugin-typescript
@@ -33,6 +41,14 @@ functions:
       - httpApi:
           path: /appointment
           method: post
+  processMessage:
+    handler: src/functions/processMessage/handler.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [MyQueue1, Arn]
+          # batchSize: 5 # Número de mensajes que la Lambda procesará por invocación
+          # maximumBatchingWindow: 60 # Tiempo máximo que se espera para agrupar mensajes
 
 resources:
   Resources:
@@ -49,7 +65,48 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-    SnsTopic:
+    SnsTopicPE:
       Type: AWS::SNS::Topic
       Properties:
-        TopicName: MySNSTopic
+        TopicName: MySNSTopicPE
+        Subscription:
+          - Protocol: sqs
+            Endpoint: !GetAtt MyQueue1.Arn
+          - Protocol: sqs
+            Endpoint: !GetAtt MyQueue2.Arn
+    # SQS Queue 1
+    MyQueue1:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: MyQueue1
+        VisibilityTimeout: 60
+    # SQS Queue 2
+    MyQueue2:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: MyQueue2
+        VisibilityTimeout: 60
+    # Subscription for Queue 1 with a filter policy
+    Queue1Subscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn:
+          Ref: SnsTopicPE
+        Protocol: sqs
+        Endpoint:
+          Fn::GetAtt: [MyQueue1, Arn]
+        FilterPolicy:
+          targetQueue:
+            - queue1
+    # Subscription for Queue 2 with a filter policy
+    Queue2Subscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn:
+          Ref: SnsTopicPE
+        Protocol: sqs
+        Endpoint:
+          Fn::GetAtt: [MyQueue2, Arn]
+        FilterPolicy:
+          targetQueue:
+            - queue2
