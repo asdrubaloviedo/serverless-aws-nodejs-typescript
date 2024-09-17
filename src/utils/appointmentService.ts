@@ -23,6 +23,20 @@ export const createAppointment = async (body) => {
   return await dynamodb.put(params).promise();
 };
 
+export const updateAppointment = async (body) => {
+  const dynamodb = connect();
+
+  const params = {
+    TableName: appointmentTable4,
+    Key: { pk: body.pk },
+    UpdateExpression: 'set #state = :state',
+    ExpressionAttributeNames: { '#state': 'state' },
+    ExpressionAttributeValues: { ':state': body.state },
+    ReturnValues: 'ALL_NEW'
+  };
+  return await dynamodb.update(params).promise();
+};
+
 export const snsMessage = async (body) => {
   const targetQueue = body.countryISO === 'PE' ? 'queue1' : 'queue2';
   const targetTopic =
@@ -31,7 +45,7 @@ export const snsMessage = async (body) => {
       : process.env.SNS_TOPIC_ARN_CL;
   try {
     const params = {
-      Message: 'Hello SNS i am the addAppointment Lambda!',
+      Message: JSON.stringify(body),
       TopicArn: targetTopic,
       MessageAttributes: {
         targetQueue: {
@@ -41,9 +55,7 @@ export const snsMessage = async (body) => {
       }
     };
 
-    console.log('Publishing to SNS:', params);
     const result = await sns.publish(params).promise();
-    console.log('SNS publish result:', result);
 
     return {
       statusCode: 200,

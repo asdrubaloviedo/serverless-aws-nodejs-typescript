@@ -23,7 +23,11 @@ provider:
             - sqs:ReceiveMessage
             - sqs:DeleteMessage
             - sqs:GetQueueAttributes
+            - events:PutEvents
           Resource: '*'
+        - Effect: Allow
+          Action: 'events:PutEvents' # Permiso para enviar eventos a EventBridge
+          Resource: !GetAtt EventQueue.Arn
 
   environment:
     SNS_TOPIC_ARN_PE:
@@ -47,6 +51,10 @@ functions:
       - httpApi:
           path: /appointment
           method: post
+      - sqs:
+          arn:
+            Fn::GetAtt: [EventQueue, Arn]
+          batchSize: 1
   processMessagePE:
     handler: src/functions/processMessagePE/handler.handler
     events:
@@ -147,3 +155,35 @@ resources:
         Protocol: sqs
         Endpoint:
           Fn::GetAtt: [MyQueue2, Arn]
+    # EventBridge Rule
+    EventBridgeRule:
+      Type: AWS::Events::Rule
+      Properties:
+        EventPattern:
+          source:
+            - 'appointment.event'
+        Targets:
+          - Arn: !GetAtt EventQueue.Arn
+            Id: 'EventQueueTarget'
+    # SQS Queue for EventBridge -> SQS -> Lambda flow
+    EventQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: EventQueue
+        VisibilityTimeout: 60
+    # Policy for SQS to allow EventBridge to send messages
+    EventQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref EventQueue
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal: '*'
+              Action: sqs:SendMessage
+              Resource: !GetAtt EventQueue.Arn
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !GetAtt EventBridgeRule.Arn
